@@ -1,12 +1,12 @@
-Dominate exceptions and missing values in Python.   
+Dominate exceptions and missing values in Python.
 
 ## What is flusso?
 
 `flusso` is a library for Python that aims to safely handle exceptions and missing values, similar to how Rust handles them with its `Option` and `Result` types.
 
-In python, `None` represents intentionally missing values and exceptions are used for handling errors. 
+In python, `None` represents intentionally missing values and exceptions are used for handling errors.
 
-Python skips using missing values and exceptions can lead to issues and bugs like: 
+Python skips using missing values and exceptions can lead to issues and bugs like:
 
 - NoneType errors
 - runtime errors
@@ -21,22 +21,22 @@ Instead, Python provides two special generic `Option` and `Result` to deal with 
 flusso implements the `Option` & `Result` types for python.
 
 ## Why should you use flusso?
-There are already several excellent libraries that implement functional patterns in python. Why flusso?  
+There are already several excellent libraries that implement functional patterns in python. Why flusso?
 
-These libraries are usually general-purpose toolkits aiming to implement all the functional programming patterns and abstractions. flusso has a more focused goal. We wanted a library specifically to ~~dominate~~ **safely** handle exceptions and missing values (None). The same way as it’s implemented in Rust. 
+These libraries are usually general-purpose toolkits aiming to implement all the functional programming patterns and abstractions. flusso has a more focused goal. We wanted a library specifically to ~~dominate~~ **safely** handle exceptions and missing values (None). The same way as it’s implemented in Rust.
 
 Other distinguishing features of flusso:
 
 - Zero dependencies: flusso has no external dependencies.
 - Practical: • Rather than bore you with all the Monad / Category theory talk, we focus on the practical applications of Monads in a way you can use today. Just as you don’t need to understand group theory to do basic arithmetic, you don’t need to understand monad theory to use flusso.
 
-Convinced? 
+Convinced?
 
 Great! Let’s get started.
 
 ## Installation
 ```markdown
-> pip install flusso 
+> pip install flusso
 ```
 
 If you find this package useful, please click the star button *✨*!
@@ -59,7 +59,7 @@ If you find this package useful, please click the star button *✨*!
 - Utils
     - [Flatten](#flatten)
     - [Pattern matching](#pattern-matching)
-    
+
 
 ## `Option<T>`
 
@@ -71,35 +71,35 @@ If you find this package useful, please click the star button *✨*!
 
 Another problem with **`None`** values is that they can cause runtime errors if they are not properly handled. For example, if a program attempts to access a property of an object that is **`None`**, it will often raise a **`NullPointerException`** or similar error. These errors can be difficult to anticipate and debug, especially if they occur deep in the codebase or if there are many layers of abstraction involved.
 
-To avoid these problems, we use Option monad as an alternative way of representing the absence of a value or the lack of an object reference. 
+To avoid these problems, we use Option monad as an alternative way of representing the absence of a value or the lack of an object reference.
 
-A monad is a design pattern that allows for the creation of sequenced computations, or "actions," that can be combined in a predictable way. 
+A monad is a design pattern that allows for the creation of sequenced computations, or "actions," that can be combined in a predictable way.
 
-The option monad is a specific type of monad that represents computations that may or may not return a value. 
+The option monad is a specific type of monad that represents computations that may or may not return a value.
 
 Option monad types allow for the explicit representation of the possibility of a missing value, and they provide methods for handling these cases in a predictable and composable way.
 
-The option monad is usually implemented as an algebraic data type with two cases: **`Some`** and **`Nothing`**. The **`Some`** case represents a computation that has a value, and it is parameterized by the type of the value. The **`Nothing`** case represents a computation that has a missing value. 
+The option monad is usually implemented as an algebraic data type with two cases: **`Some`** and **`Nothing`**. The **`Some`** case represents a computation that has a value, and it is parameterized by the type of the value. The **`Nothing`** case represents a computation that has a missing value.
 
 
-Option monad helps us safely handle missing values in a predictable and composable way without being afraid of the null pointer exception, runtime errors, and unexpected behaviour in our code. 
+Option monad helps us safely handle missing values in a predictable and composable way without being afraid of the null pointer exception, runtime errors, and unexpected behaviour in our code.
 
 [⬆️  Back to top](#toc)
 
-    
+
 ## **Basic usage**
-    
+
  **Example I**
-  
-  Let’s start with a common example you see in many codebases today. 
-  
+
+  Let’s start with a common example you see in many codebases today.
+
   ```python
     class User:
         def __init__(self, id: int, fullname: str, username: str):
             self.id = id
             self.fullname = fullname
             self.username = username
-            
+
         users = [
             User(1, "Leonardo Da Vinci", "leo"),
             User(2, "Galileo Galilei", "gaga")
@@ -121,15 +121,15 @@ Option monad helps us safely handle missing values in a predictable and composab
     else:
         print("User not found")
   ```
-  
+
   This code focuses on telling the computer how to perform a task, step by step. It involves specifying the sequence of actions that the computer should take and the specific operations it should perform at each step.
-  
+
   The code also uses None to define missing values. Even with a simple example like this, it’s not immediately clear where the None is coming from when we check if the username is None. In large codebases, this can be a nightmare to diagnose and fix.
-  
-  However, since this code style is more familiar and follows a more traditional control flow, it can be easier to understand for most programmers. 
-  
-  Let's rewrite this with a declarative style using flusso option monad 
-  
+
+  However, since this code style is more familiar and follows a more traditional control flow, it can be easier to understand for most programmers.
+
+  Let's rewrite this with a declarative style using flusso option monad
+
   ```python
     from flusso import Option, Some, Nothing
 
@@ -149,7 +149,7 @@ Option monad helps us safely handle missing values in a predictable and composab
         return Some(user)
 
     def get_username(id: int) -> Option[str]:
-        return get_user(id).map(lambda user: user.username)
+        return get_user(id).bind(lambda user: user.username)
 
 
     match get_username(1):
@@ -161,27 +161,27 @@ Option monad helps us safely handle missing values in a predictable and composab
         case Nothing
             print('User not found!')
 
-    # Alternatively 
+    # Alternatively
     # if username.is_some():
     #     print(username.unwrap())
     # else:
     #     print("User not found")
   ```
-  
-  This code style focuses on describing the input (the user's ID) and the desired output (the username). 
+
+  This code style focuses on describing the input (the user's ID) and the desired output (the username).
   The match function handles the case where the user is not found by providing a default value (in this case, a message saying "User not found").
-  
-  With flusso, we have  successfully handled missing values in a predictable and composable way. 
+
+  With flusso, we have  successfully handled missing values in a predictable and composable way.
 
    **Example II**
-  
-  Let’s look at another example of using option to handle optional values. 
-  
-  if the value of an object can be empty or optional like the `middle_name`of `User` in the following example, we can set its data type as an `Option`type. 
-  
+
+  Let’s look at another example of using option to handle optional values.
+
+  if the value of an object can be empty or optional like the `middle_name`of `User` in the following example, we can set its data type as an `Option`type.
+
   ```python
    from flusso import Option, Some, Nothing
-  
+
     def get_full_name(first_name: str, middle_name: 'Option[str]', last_name: str) -> str:
         match(middle_name):
             case Some(mname):
@@ -190,12 +190,12 @@ Option monad helps us safely handle missing values in a predictable and composab
             # Matches `Nothing` instance
             case Nothing
                 print(f"{first_name} {last_name}")
-    
-    getFullName({firstName: "Galileo", middleName: None, lastName: "Galilei"}); // Galileo Galilei	
+
+    getFullName({firstName: "Galileo", middleName: None, lastName: "Galilei"}); // Galileo Galilei
     getFullName({firstName: "Leonardo", middleName: Some("Da"), lastName: "Vinci"}); // Leonardo Da Vinci
   ```
-   Let’s look at another example by chaining calculations 
-  
+   Let’s look at another example by chaining calculations
+
   ```python
    from flusso import Option, Some, Nothing
 
@@ -216,14 +216,14 @@ Option monad helps us safely handle missing values in a predictable and composab
             return x / y
         else:
             return Nothing
-    
+
     def sineCubedIncDoubleDivideBy10(x: float):
         return Some(x)
-                    .map(sine)
-                    .map(cube)
-                    .map(inc)
-                    .map(double)
-                    .map(lambda x: divide(x, 10)))
+                    .bind(sine)
+                    .bind(cube)
+                    .bind(inc)
+                    .bind(double)
+                    .bind(lambda x: divide(x, 10)))
 
     match(sineCubedIncDoubleDivideBy10(30)):
             case Some(result):
