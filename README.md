@@ -149,7 +149,7 @@ Option monad helps us safely handle missing values in a predictable and composab
         return Some(user)
 
     def get_username(id: int) -> Option[str]:
-        return get_user(id).bind(lambda user: user.username)
+        return get_user(id).fmap(lambda user: user.username)
 
 
     match get_username(1):
@@ -219,11 +219,11 @@ Option monad helps us safely handle missing values in a predictable and composab
 
     def sineCubedIncDoubleDivideBy10(x: float):
         return Some(x)
-                    .bind(sine)
-                    .bind(cube)
-                    .bind(inc)
-                    .bind(double)
-                    .bind(lambda x: divide(x, 10)))
+                    .fmap(sine)
+                    .fmap(cube)
+                    .fmap(inc)
+                    .fmap(double)
+                    .fmap(lambda x: divide(x, 10)))
 
     match(sineCubedIncDoubleDivideBy10(30)):
             case Some(result):

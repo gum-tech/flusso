@@ -1,5 +1,7 @@
-from typing import Generic, TypeVar, Callable, Union, Tuple
+from typing import Generic, TypeVar, Callable, Tuple, Generator
 from dataclasses import dataclass
+from contextlib import contextmanager
+import logging
 
 T = TypeVar('T')
 
@@ -8,7 +10,7 @@ class Option(Generic[T]):
     """
     An implementation of the Option Monad pattern, which represents an optional value that may or may not be present.
     """
-    bind: Callable[[T], 'Option']
+    fmap: Callable[[T], 'Option']
     and_then: Callable[[Callable[[T], 'Option']], 'Option']
     filter_: Callable[[Callable[[T], bool]], 'Option']
     unwrap: Callable[[], T]
@@ -21,7 +23,7 @@ class Option(Generic[T]):
     ok_or: Callable[[T], Tuple[bool, T]]
     is_some: Callable[[], bool]
     is_none: Callable[[], bool]
-    value: Union[T, None]
+    # _value: Union[T, None]
 
     def __eq__(self, other: 'Option') -> bool:
         """
@@ -37,6 +39,18 @@ class Option(Generic[T]):
         else:
             return False
 
+    @classmethod
+    @contextmanager
+    def do(cls, option: 'Option[T]') -> Generator[T, None, None]:
+        if option.is_some():
+            try:
+                yield option.unwrap()
+            except Exception as e:
+                logging.error(f"An error occurred while unwrapping the Option value: {e}")
+
+        else:
+            return
+
 def _some(value: T) -> Option:
     """
     Create a new `Some` instance of the OptionMonad pattern with the specified value.
@@ -47,7 +61,7 @@ def _some(value: T) -> Option:
     Returns:
         An `Option` instance representing the `Some` variant, wrapping the specified value.
     """
-    def bind(fn: Callable[[T], T]) -> Option:
+    def fmap(fn: Callable[[T], T]) -> Option:
         return _some(fn(value))
 
     def and_then(fn: Callable[[T], Option]) -> Option:
@@ -65,21 +79,19 @@ def _some(value: T) -> Option:
         return value
 
     def unwrap_or(_val: T) -> T:
-        if value is None:
-            raise ValueError("Cannot call `unwrap_or` on `None` value")
         return value
 
     def unwrap_or_else(default: T) -> T:
-        return value if value is not None else default
+       return value if value is not Nothing else default
 
     def or_(other: Option) -> Option:
         return _some(value)
 
     def or_else(fn: Callable[[], Option]) -> Option:
-        return _some(value) if value is not None else fn()
+        return _some(value) if value is not Nothing else fn()
 
     def and_(other: Option) -> Option:
-        return other if value is not None else _none()
+        return other if value is not Nothing else _none()
 
     def ok_or(error: T) -> Tuple[bool, T]:
         return (True, value)
@@ -91,9 +103,9 @@ def _some(value: T) -> Option:
         return False
 
     return Option(
-        bind, and_then, filter_, unwrap, expect, unwrap_or,
+        fmap, and_then, filter_, unwrap, expect, unwrap_or,
         unwrap_or_else, or_, or_else, and_, ok_or, is_some,
-        is_none, value
+        is_none
     )
 
 def _none() -> Option:
@@ -103,7 +115,7 @@ def _none() -> Option:
     Returns:
         An `Option` instance representing the `None` variant.
     """
-    def bind(_: Callable[[T], T]) -> Option:
+    def fmap(_: Callable[[T], T]) -> Option:
         return _none()
 
     def and_then(_: Callable[[T], Option]) -> Option:
@@ -121,8 +133,8 @@ def _none() -> Option:
     def unwrap_or(other: T) -> T:
         return other
 
-    def unwrap_or_else(other: T) -> T:
-        return other
+    def unwrap_or_else(fn: Callable[[], T]) -> T:
+        return fn()
 
     def or_(other: Option) -> Option:
         return other
@@ -143,9 +155,9 @@ def _none() -> Option:
         return True
 
     return Option(
-        bind, and_then, filter_, unwrap, expect, unwrap_or,
+        fmap, and_then, filter_, unwrap, expect, unwrap_or,
         unwrap_or_else, or_, or_else, and_, ok_or, is_some,
-        is_none, None
+        is_none
     )
 
 # Alias for none() to avoid confusion with None
