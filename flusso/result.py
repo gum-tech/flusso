@@ -1,56 +1,8 @@
-from typing import Generic, TypeVar, Callable, Any, NoReturn, Generator
-from dataclasses import dataclass
-from flusso.option import Some, Nothing, Option
-from contextlib import contextmanager
-import logging
+from typing import Callable, Any, NoReturn
+from .types import T, E, A
+from flusso.primitives.base import Option, Result
+from flusso import Some, Nothing
 
-T = TypeVar('T')
-E = TypeVar('E')
-A = TypeVar('A')
-
-@dataclass
-class Result(Generic[T, E]):
-    ok: Callable[[], Option[T]]
-    err: Callable[[], Option[E]]
-    unwrap: Callable[[], T]
-    unwrap_or: Callable[[T], T]
-    unwrap_or_else: Callable[[Callable[[E], T]], T]
-    unwrap_err: Callable[[], E]
-    expect: Callable[[A], T]
-    expect_err: Callable[[str], E]
-    fmap: Callable[[Callable[[T], 'Result[T, E]']], 'Result[T, E]']
-    fmap_err: Callable[[Callable[[E], 'Result[T, E]']], 'Result[T, E]']
-    and_then: Callable[[Callable[[T], 'Result[T,E]']], 'Result[T, E]']
-    or_: Callable[['Result[T, E]'], 'Result[T, E]']
-    or_else: Callable[[Callable[[E], 'Result[T, E]']], 'Result[T, E]']
-    and_: Callable[['Result[T, E]'], 'Result[T, E]']
-    is_ok: Callable[[], bool]
-    is_err: Callable[[], bool]
-
-    def __eq__(self, other: 'Result[T, E]') -> bool:
-        """
-        Compare this Result instance with another instance.
-
-        Returns:
-            True if both instances are of the same variant (Ok or Err) and have the same value, False otherwise.
-        """
-        if self.is_ok() and other.is_ok():
-            return self.ok().unwrap() == other.ok().unwrap()
-        elif self.is_err() and other.is_err():
-            return self.err().unwrap() == other.err().unwrap()
-        else:
-            return False
-
-    @classmethod
-    @contextmanager
-    def do(cls, result: 'Result[T, E]') -> Generator[T, None, None]:
-        if result.is_ok():
-            try:
-                yield result.unwrap()
-            except Exception as e:
-                logging.error(f"An error occurred while unwrapping the Result value: {e}")
-        else:
-            return
 
 def Ok(value: T) -> Result[T, E]:
     def ok() -> Option[T]:

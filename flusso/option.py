@@ -1,55 +1,7 @@
-from typing import Generic, TypeVar, Callable, Tuple, Generator
-from dataclasses import dataclass
-from contextlib import contextmanager
-import logging
+from typing import Callable
+from .types import T, E
+from flusso.primitives.base import Option, Result
 
-T = TypeVar('T')
-
-@dataclass
-class Option(Generic[T]):
-    """
-    An implementation of the Option Monad pattern, which represents an optional value that may or may not be present.
-    """
-    fmap: Callable[[T], 'Option']
-    and_then: Callable[[Callable[[T], 'Option']], 'Option']
-    filter_: Callable[[Callable[[T], bool]], 'Option']
-    unwrap: Callable[[], T]
-    expect: Callable[[str], T]
-    unwrap_or: Callable[[], T]
-    unwrap_or_else: Callable[[T], T]
-    or_: Callable[['Option'], 'Option']
-    or_else: Callable[[Callable[[], 'Option']], 'Option']
-    and_: Callable[['Option'], 'Option']
-    ok_or: Callable[[T], Tuple[bool, T]]
-    is_some: Callable[[], bool]
-    is_none: Callable[[], bool]
-    # _value: Union[T, None]
-
-    def __eq__(self, other: 'Option') -> bool:
-        """
-        Compare this Option instance with another instance.
-
-        Returns:
-            True if both instances are None or both have the same value, False otherwise.
-        """
-        if self.is_none() and other.is_none():
-            return True
-        elif self.is_some() and other.is_some():
-            return self.unwrap() == other.unwrap()
-        else:
-            return False
-
-    @classmethod
-    @contextmanager
-    def do(cls, option: 'Option[T]') -> Generator[T, None, None]:
-        if option.is_some():
-            try:
-                yield option.unwrap()
-            except Exception as e:
-                logging.error(f"An error occurred while unwrapping the Option value: {e}")
-
-        else:
-            return
 
 def _some(value: T) -> Option:
     """
@@ -93,8 +45,9 @@ def _some(value: T) -> Option:
     def and_(other: Option) -> Option:
         return other if value is not Nothing else _none()
 
-    def ok_or(error: T) -> Tuple[bool, T]:
-        return (True, value)
+    def ok_or(_error: E) -> 'Result[T, E]':
+        from flusso import Ok
+        return Ok(value)
 
     def is_some() -> bool:
         return True
@@ -145,8 +98,9 @@ def _none() -> Option:
     def and_(other: Option) -> Option:
         return _none()
 
-    def ok_or(error: T) -> Tuple[bool, T]:
-        return (False, error)
+    def ok_or(error: E) -> 'Result[T, E]':
+        from flusso import Err
+        return Err(error)
 
     def is_some() -> bool:
         return False

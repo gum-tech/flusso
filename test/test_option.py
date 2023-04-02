@@ -1,4 +1,4 @@
-from flusso.option import Nothing, Some, option, Option
+from flusso import Nothing, Some, option, Option
 
 def double(x: int) -> Option[int]:
     return Some(x * 2)
@@ -54,6 +54,25 @@ def test_option_eq():
     assert Some(42) != Some(43)
     assert Nothing == Nothing
     assert Some(42) != Nothing
+
+def test_ok_or():
+    s = Some(12)
+    error = "An error occurred"
+
+    result = s.ok_or(error)
+    assert result.is_ok()
+    assert not result.is_err()
+    assert result.unwrap() == 12
+    assert result.unwrap_or(0) == 12
+    assert result.unwrap_or_else(lambda: 0) == 12
+
+    n = Nothing
+    res_err = n.ok_or(error)
+    assert not res_err.is_ok()
+    assert res_err.is_err()
+    assert res_err.unwrap_or(0) == 0
+    print(result)
+    assert res_err.unwrap_or_else(lambda x: 0) == 0
 
 def test_option_do_notation() -> None:
     x = 3

@@ -1,4 +1,4 @@
-from flusso.result import Ok, Err, result, Result
+from flusso import Ok, Err, result, Result
 
 def fail_on_even(x: int) -> Result[int, str]:
     if x % 2 == 0:

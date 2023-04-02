@@ -15,6 +15,9 @@ setup(
     packages= find_packages(),
     license="MIT",
     keywords=['python', 'monad', 'rust', 'functional-programming', 'option', 'result'],
+    extras_require={
+        "dev": ["pytest>=7.0", "twine>=4.0.2"],
+    },
     python_requires=">=3.7",
     include_package_data=True,
     classifiers=[
