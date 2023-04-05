@@ -1,4 +1,5 @@
-from flusso import Ok, Err, result, Result
+from flusso.result import Ok, Err, result, Result
+from flusso.primitives.exceptions import UnwrapFailedError
 
 def fail_on_even(x: int) -> Result[int, str]:
     if x % 2 == 0:
@@ -26,6 +27,24 @@ def test_err():
     assert res.ok().is_none()
     assert res.err().unwrap() == "Error"
 
+def test_ok_unwrap_err():
+    ok_value = Ok(42)
+
+    try:
+        ok_value.unwrap_err()
+        assert False, "Expected UnwrapFailedError when calling unwrap_err on Ok value"
+    except UnwrapFailedError:
+        pass  # Expected exception
+
+def test_err_unwrap():
+    e = Err("error message")
+
+    try:
+        e.unwrap()
+        assert False, "Expected UnwrapFailedError when calling unwrap on Err value"
+    except UnwrapFailedError as ex:
+        assert ex.halted_container == e, "Expected halted_container to be the same Err instance"
+
 def test_unwrap_or():
     res_ok = Ok(42)
     res_err = Err("Error")
@@ -37,6 +56,15 @@ def test_unwrap_or_else():
     res_err = Err("Error")
     assert res_ok.unwrap_or_else(lambda x: 0) == 42
     assert res_err.unwrap_or_else(lambda x: 0) == 0
+
+def test_err_expect():
+    e = Err("error message")
+
+    try:
+        e.expect("Custom error message")
+        assert False, "Expected ValueError when calling expect on Err value"
+    except ValueError as ex:
+        assert str(ex) == "Custom error message", "Expected custom error message to be raised"
 
 def test_fmap():
     res_ok = Ok(42)
@@ -56,11 +84,11 @@ def test_and_then():
     assert res_ok.and_then(lambda x: Ok(x * 2)) == Ok(84)
     assert res_err.and_then(lambda x: Ok(x * 2)) == res_err
 
-def test_or_():
+def test_value_or():
     res_ok = Ok(42)
     res_err = Err("Error")
-    assert res_ok.or_(Err("New error")) == res_ok
-    assert res_err.or_(Ok(42)) == Ok(42)
+    assert res_ok.value_or(Err("New error")) == res_ok
+    assert res_err.value_or(Ok(42)) == Ok(42)
 
 def test_or_else():
     res_ok = Ok(42)
@@ -68,11 +96,11 @@ def test_or_else():
     assert res_ok.or_else(lambda x: Ok(0)) == res_ok
     assert res_err.or_else(lambda x: Ok(0)) == Ok(0)
 
-def test_and_():
+def test_value_and():
     res_ok = Ok(42)
     res_err = Err("Error")
-    assert res_ok.and_(Ok(84)) == Ok(84)
-    assert res_err.and_(Ok(84)) == res_err
+    assert res_ok.value_and(Ok(84)) == Ok(84)
+    assert res_err.value_and(Ok(84)) == res_err
 
 def test_result_decorator():
 
@@ -118,3 +146,20 @@ def test_result_do_notation():
         result = Ok(c)
 
     assert result == Ok((x * 3 + 1))
+
+def test_result_pattern_matching():
+    res = Ok(42)
+
+    match res:
+        case Ok(x):
+            assert x == 42
+        case Err(_):
+            assert False, "Unexpected match with Err"
+
+    res = Err("error")
+
+    match res:
+        case Ok(_):
+            assert False, "Unexpected match with Ok"
+        case Err(e):
+            assert e == "error"

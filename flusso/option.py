@@ -1,133 +1,186 @@
-from typing import Callable
-from .types import T, E
+from typing import Callable, NoReturn
+from dataclasses import dataclass
+from .types import T, E, A
 from flusso.primitives.base import Option, Result
+from flusso.primitives.exceptions import UnwrapFailedError
 
 
-def _some(value: T) -> Option:
-    """
-    Create a new `Some` instance of the OptionMonad pattern with the specified value.
+@dataclass
+class Some(Option[T]):
+    value: T
 
-    Args:
-        value: The value to wrap in the `Some` instance.
+    def __new__(cls, value: T) -> Option[T]:
+        """
+        Create a new `Some` instance, or return `Nothing` if the provided value is `None` or `Nothing`.
+        """
+        return Nothing if value is None or value is Nothing else super().__new__(cls)
 
-    Returns:
-        An `Option` instance representing the `Some` variant, wrapping the specified value.
-    """
-    def fmap(fn: Callable[[T], T]) -> Option:
-        return _some(fn(value))
+    def fmap(self, fn: Callable[[T], A]) -> Option[A]:
+        """
+        Apply the given function to the value and return a new `Some` instance with the result, or `Nothing` if the value is `None` or `Nothing`.
+        """
+        return Some(fn(self.value))
 
-    def and_then(fn: Callable[[T], Option]) -> Option:
-        return fn(value)
+    def and_then(self, fn: Callable[[T], Option[A]]) -> Option[A]:
+        """
+        Apply the given function to the value and return the resulting `Option` instance.
+        """
+        return fn(self.value)
 
-    def filter_(fn: Callable[[T], bool]) -> Option:
-        return _some(value) if fn(value) else _none()
+    def filter_by_predicate(self, predicate: Callable[[T], bool]) -> Option[T]:
+        """
+        Apply the given predicate to the value and return `Some(value)` if the predicate returns `True`, or `Nothing` otherwise.
+        """
+        return Some(self.value) if predicate(self.value) else Nothing
 
-    def unwrap() -> T:
-        return value
+    def unwrap(self) -> T:
+        """
+        Return the contained value if it is `Some`, otherwise raise a `ValueError`.
+        """
+        return self.value
 
-    def expect(msg: str) -> T:
-        if value is None:
-            raise Exception(msg)
-        return value
+    def expect(self, msg: str) -> T:
+        """
+        Return the contained value if it is `Some`, otherwise raise an `Exception` with the provided message.
+        """
+        return self.value
 
-    def unwrap_or(_val: T) -> T:
-        return value
+    def unwrap_or(self, _val: A) -> T:
+        """
+        Return the contained value if it is `Some`, otherwise return the provided default value.
+        """
+        return self.value
 
-    def unwrap_or_else(default: T) -> T:
-       return value if value is not Nothing else default
+    def unwrap_or_else(self, fn: Callable[[], T]) -> T:
+        """
+        Return the contained value if it is `Some`, otherwise call the provided function and return its result.
+        """
+        return self.value
 
-    def or_(other: Option) -> Option:
-        return _some(value)
+    def value_or(self, other: Option[A]) -> Option[T]:
+        """
+        Return the `Some` instance if it has a value, otherwise return the provided `Option` instance.
+        """
+        return self
 
-    def or_else(fn: Callable[[], Option]) -> Option:
-        return _some(value) if value is not Nothing else fn()
+    def or_else(self, fn: Callable[[], Option[A]]) -> Option[T]:
+        """
+        Return the `Some` instance if it has a value, otherwise call the provided function and return its result.
+        """
+        return self
 
-    def and_(other: Option) -> Option:
-        return other if value is not Nothing else _none()
+    def value_and(self, other: Option[A]) -> Option[A]:
+        """
+        Return the provided `Option` instance if the current instance has a value, otherwise return `Nothing`.
+        """
+        return other
 
-    def ok_or(_error: E) -> 'Result[T, E]':
-        from flusso import Ok
-        return Ok(value)
+    def ok_or(self, _error: 'E') -> Result[T, E]:
+        """
+        Return an `Ok` instance containing the value if it is `Some`, otherwise return an `Err` instance containing the provided error.
+        """
+        from flusso.result import Ok
+        return Ok(self.value)
 
-    def is_some() -> bool:
+    def is_some(self) -> bool:
+        """
+        Return `True` if the instance is a `Some` variant, otherwise return `False`.
+        """
         return True
 
-    def is_none() -> bool:
+    def is_none(self) -> bool:
+        """
+        Return `True` if the instance is a `Nothing` variant, otherwise return `False`.
+        """
         return False
 
-    return Option(
-        fmap, and_then, filter_, unwrap, expect, unwrap_or,
-        unwrap_or_else, or_, or_else, and_, ok_or, is_some,
-        is_none
-    )
 
-def _none() -> Option:
-    """
-    Create a new `None` instance of the OptionMonad pattern.
+@dataclass
+class Nothing(Option[T]):
 
-    Returns:
-        An `Option` instance representing the `None` variant.
-    """
-    def fmap(_: Callable[[T], T]) -> Option:
-        return _none()
+    def fmap(self, _: Callable[[T], A]) -> Option[A]:
+        """
+        Do not apply the given function and return `Nothing`.
+        """
+        return self
 
-    def and_then(_: Callable[[T], Option]) -> Option:
-        return _none()
 
-    def filter_(_: Callable[[T], bool]) -> Option:
-        return _none()
+    def and_then(self, _: Callable[[T], Option[A]]) -> Option[A]:
+        """
+        Do not apply the given function and return `Nothing`.
+        """
+        return self
 
-    def unwrap() -> T:
-        raise ValueError("Cannot call `unwrap` on `Nothing` value")
+    def filter_by_predicate(self, _: Callable[[T], bool]) -> Option[T]:
+        """
+        Do not apply the given predicate and return `Nothing`.
+        """
+        return self
 
-    def expect(msg: str) -> T:
-        raise Exception(msg)
+    def unwrap(self) -> NoReturn:
+        """
+        Raise a `UnwrapFailedError` since `Nothing` has no value to unwrap.
+        """
+        # raise ValueError("Cannot call `unwrap` on `Nothing` value")
+        raise UnwrapFailedError(self)
 
-    def unwrap_or(other: T) -> T:
+    def expect(self, msg: str) -> NoReturn:
+        """
+        Raise a `ValueError` with the provided message since `Nothing` has no value.
+        """
+        raise ValueError(msg)
+
+    def unwrap_or(self, other: A) -> T:
+        """
+        Return the provided default value since `Nothing` has no value.
+        """
         return other
 
-    def unwrap_or_else(fn: Callable[[], T]) -> T:
+    def unwrap_or_else(self, fn: Callable[[], T]) -> T:
+        """
+        Call the provided function and return its result since `Nothing` has no value.
+        """
         return fn()
 
-    def or_(other: Option) -> Option:
+    def value_or(self, other: Option[A]) -> Option[A]:
+        """
+        Return the provided `Option` instance since `Nothing` has no value.
+        """
         return other
 
-    def or_else(fn: Callable[[], Option]) -> Option:
+    def or_else(self, fn: Callable[[], Option[A]]) -> Option[A]:
+        """
+        Call the provided function and return its result since `Nothing` has no value.
+        """
         return fn()
 
-    def and_(other: Option) -> Option:
-        return _none()
+    def value_and(self, other: Option[A]) -> Option[T]:
+        """
+        Return `Nothing` since the current instance has no value.
+        """
+        return self
 
-    def ok_or(error: E) -> 'Result[T, E]':
-        from flusso import Err
+    def ok_or(self, error: 'E') -> Result[T, E]:
+        """
+        Return an `Err` instance containing the provided error since `Nothing` has no value.
+        """
+        from flusso.result import Err
         return Err(error)
 
-    def is_some() -> bool:
+    def is_some(self) -> bool:
+        """
+        Return `False` since the instance is not a `Some` variant.
+        """
         return False
 
-    def is_none() -> bool:
+    def is_none(self) -> bool:
+        """
+        Return `True` since the instance is a `Nothing` variant.
+        """
         return True
 
-    return Option(
-        fmap, and_then, filter_, unwrap, expect, unwrap_or,
-        unwrap_or_else, or_, or_else, and_, ok_or, is_some,
-        is_none
-    )
-
-# Alias for none() to avoid confusion with None
-Nothing: Option = _none()
-
-def Some(value: T) -> Option:
-    """
-    Create a new `Some` instance of the OptionMonad pattern with the specified value, or `None` if the value is `None`.
-
-    Args:
-        value: The value to wrap in the `Some` instance.
-
-    Returns:
-        An `Option` instance representing the `Some` variant, wrapping the specified value, or an instance of the `None` variant if the specified value is `None`.
-    """
-    return _none() if value is Nothing else _some(value)
+# Singleton pattern for Nothing
+Nothing = Nothing()
 
 # Option decorator
 def option(fn: Callable) -> Callable:
