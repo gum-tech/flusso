@@ -1,7 +1,9 @@
 import math
-from flusso import Option, Some, Nothing, Result, Ok, Err
+from flusso.option import Option, Some, Nothing
+from flusso.result import Result, Ok, Err
 
 # Examples from documentation
+# python run.py
 
 # Example I
 print("----Example I----")

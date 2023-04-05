@@ -411,16 +411,16 @@ There are several reasons why you might choose to use the flusso.result in your 
 To remove many levels of nesting:
 
 ```python
-import { Some, None, Ok, Err, flatten } from 'flow-ts'
-// with Option
-flatten(Some(Some(None))) // None
-flatten(Some('some1')) // Some('some1')
-flatten(None) // None
-// with Result
-flatten(Ok(Ok(Ok(Ok(Ok(Ok(Ok(10)))))))) // Ok(10)
-flatten(Ok(Ok(Err('error1')))) // Err('error2')
-flatten(Ok('ok1')) // Ok('ok1')
-flatten(Err('error1')) // Err('error1')
+# With Option
+print(flatten(Some(Some(Nothing))))  # Nothing
+print(flatten(Some("some1")))        # Some("some1")
+print(flatten(Nothing))              # Nothing
+
+# With Result
+print(flatten(Ok(Ok(Ok(Ok(Ok(Ok(Ok(10)))))))) # Ok(10)
+print(flatten(Ok(Ok(Err("error1")))))         # Err("error1")
+print(flatten(Ok("ok1")))                     # Ok("ok1")
+print(flatten(Err("error1")))                 # Err("error1")
 ```
 
 ### Pattern matching
