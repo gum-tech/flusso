@@ -61,6 +61,11 @@ If you find this package useful, please click the star button *✨*!
     - [Basic usage](#basic-usage-1)
     - [Result decorator](#result-decorator)
     - [Benefits](#benefits-1)
+- `AsyncResult<T,E>`
+    - [Introduction](#introduction-2)
+    - [Basic usage](#basic-usage-2)
+    - [AsyncResult decorator](#async_result-decorator)
+    - [Benefits](#benefits-2)
 - Utils
     - [Flatten](#flatten)
     - [Pattern matching](#pattern-matching)
@@ -138,7 +143,7 @@ Option monad helps us safely handle missing values in a predictable and composab
   Let's rewrite this with a declarative style using flusso
 
   ```python
-    from flusso import Option, Some, Nothing
+    from flusso.option import Option, Some, Nothing
 
     class User:
         def __init__(self, id: int, fullname: str, username: str):
@@ -187,7 +192,7 @@ Option monad helps us safely handle missing values in a predictable and composab
   if the value of an object can be empty or optional like the `middle_name`of `User` in the following example, we can set its data type as an `Option`type.
 
   ```python
-   from flusso import Option, Some, Nothing
+   from flusso.option import Option, Some, Nothing
 
     def get_full_name(first_name: str, middle_name: Option[str], last_name: str) -> str:
     match(middle_name):
@@ -263,7 +268,7 @@ When working with functions that return Optional values, it's common to encounte
 Here's how to use the @option decorator in Flusso:
   ```python
     from typing import Optional
-    from flusso import Option, Some, option
+    from flusso.option import Option, Some, option
 
     @option
     def find_even_number(numbers: list[int]) -> Optional[int]:
@@ -404,8 +409,144 @@ There are several reasons why you might choose to use the flusso.result in your 
 
 [⬆️  Back to top](#toc)
 
-## Utils
+## AsyncResult[T, E]
 
+### **Introduction**
+
+  `AsyncResult` is a utility class for working with asynchronous operations that may result in a success or an error. It is built on top of the Result class, which represents a synchronous operation's result. The AsyncResult class is useful for chaining, transforming, and handling results from asynchronous operations.
+
+  [⬆️  Back to top](#toc)
+
+### **Basic usage**
+
+  Let’s start with an example of how you might use exceptions in Python.
+
+  ```python
+    from flusso.async_result import async_result, Ok, Err
+
+    @async_result
+    async def async_fetch_data(url: str) -> Dict[str, Any]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    raise ValueError("Failed to fetch data")
+                return await response.json()
+
+    async def fetch():
+        url = "https://jsonplaceholder.typicode.com/todos/1"
+        async_result = await async_fetch_data(url)
+
+        match async_result._result:
+            case Ok(value):
+                print("Fetched data:", value)
+            case Err(error):
+                print("Error fetching data:", error)
+
+        # Alternatively
+        # if async_result.is_ok():
+        #     print("Fetched data:", await async_result.unwrap())
+        # else:
+        #     print("Error fetching data:", await async_result.unwrap_err())
+
+    asyncio.run(fetch())
+
+  ```
+AsyncResult provides several methods for working with and transforming the result:
+
+- fmap(fn): Transform the successful value using an asynchronous or synchronous function.
+- fmap_err(fn): Transform the error value using an asynchronous or synchronous function.
+- and_then(fn): Chain an asynchronous operation that returns a new AsyncResult if the current result is a success.
+- or_else(fn): Chain an asynchronous operation that returns a new AsyncResult if the current result is an error.
+
+#### fmap
+Transform the successful value using an asynchronous or synchronous function. If the AsyncResult is an error, the function won't be called, and the original error will be propagated.
+```python
+    async def async_multiply(value, factor):
+        return value * factor
+
+    async_result = AsyncResult(Ok(5))
+    mapped_result = await async_result.fmap(async_multiply, 2)  # Ok(10)
+```
+#### fmap_err
+Transform the error value using an asynchronous or synchronous function. If the AsyncResult is a success, the function won't be called, and the original success value will be propagated.
+```python
+    async def async_error_message(code):
+        return f"Error {code}"
+
+    async_result = AsyncResult(Err(404))
+    mapped_error_result = await async_result.fmap_err(async_error_message)  # Err("Error 404")
+```
+#### and_then
+Chain an asynchronous operation that returns a new AsyncResult if the current result is a success. If the AsyncResult is an error, the function won't be called, and the original error will be propagated.
+```python
+    async def async_double(value):
+        return AsyncResult(Ok(value * 2))
+
+    async_result = AsyncResult(Ok(5))
+    chained_result = await async_result.and_then(async_double)  # Ok(10)
+```
+
+#### or_else
+Chain an asynchronous operation that returns a new AsyncResult if the current result is an error. If the AsyncResult is a success, the function won't be called, and the original success value will be propagated.
+
+```python
+    async def async_handle_error(error):
+        return AsyncResult(Ok(f"Recovered from {error}"))
+
+    async_result = AsyncResult(Err("an error"))
+    handled_result = await async_result.or_else(async_handle_error)  # Ok("Recovered from an error")
+```
+
+[⬆️  Back to top](#toc)
+
+## AsyncResult decorator
+When working with asynchronous functions that might raise exceptions, it's common to see many try-except blocks combined with async-await syntax, which can complicate your code. Flusso comes to the rescue with the @async_result decorator, which simplifies this process by converting asynchronous functions that raise exceptions into functions that return AsyncResult instances instead.
+
+Here's how to use the @async_result_decorator in Flusso:
+  ```python
+    @async_result
+    # Apply the @async_result decorator to your asynchronous functions that might raise exceptions:
+    async def async_fetch_data(url: str) -> Result[str, Exception]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    raise ValueError("Failed to fetch data")
+                return await response.text()
+
+    # When calling the decorated function, it will return an AsyncResult object instead of raising an exception:
+    async def main():
+        url = "https://example.com/data"
+        async_result = await async_fetch_data(url)
+
+        if async_result.is_ok():
+            print("Fetched data:", await async_result.unwrap())
+        else:
+            print("Error fetching data:", await async_result.unwrap_err())
+  ```
+
+
+### **Benefits**
+
+There are several reasons why you might choose to use the flusso.async_result in your code:
+
+1. Cleaner code: By using AsyncResult, you can minimize the need for nested try-except blocks and async-await syntax, leading to more readable and maintainable code.
+
+2. Composable error handling: The AsyncResult class allows you to chain error handling and transformation functions, making it easy to compose complex error handling logic in a declarative manner.
+
+3. Separation of concerns: AsyncResult helps you separate the success and error cases, ensuring that your functions are focused on their primary responsibilities and not cluttered with error handling logic.
+
+4. Type safety: AsyncResult is a generic type that allows you to specify the success and error types, providing better type-checking and making it easier to catch potential issues during development.
+
+5. Flexible error transformation: The AsyncResult class provides methods like fmap, fmap_err, and_then, and or_else, which allow you to transform, chain, and handle errors in a flexible way.
+
+6. Easier testing: Since functions that return AsyncResult objects no longer raise exceptions directly, testing various scenarios and edge cases becomes simpler and more intuitive.
+
+7. Consistent error handling: By using AsyncResult throughout your code, you can establish a consistent approach to error handling, making your codebase more robust and easier to understand.
+
+8. Integration with Result: AsyncResult is designed to work seamlessly with Flusso's Result class, allowing you to handle both synchronous and asynchronous operations with a consistent API.
+
+
+## Utils
 
 ### Flatten
 To remove many levels of nesting:

@@ -1,6 +1,10 @@
 import math
+import asyncio
+from typing import Dict, Any
+import aiohttp
 from flusso.option import Option, Some, Nothing
 from flusso.result import Result, Ok, Err
+from flusso.async_result import async_result
 
 # Examples from documentation
 # python run.py
@@ -153,3 +157,32 @@ match opt_value:
                 print(f"Error: {err_msg}")
     case Nothing:
         print("Value not found in the data")
+
+
+# Example VII
+print("----Example VII----")
+@async_result
+async def async_fetch_data(url: str) -> Dict[str, Any]:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                raise ValueError("Failed to fetch data")
+            return await response.json()
+
+async def fetch():
+    url = "https://jsonplaceholder.typicode.com/todos/1"
+    async_result = await async_fetch_data(url)
+
+    match async_result._result:
+        case Ok(value):
+            print("Fetched data:", value)
+        case Err(error):
+            print("Error fetching data:", error)
+
+    # Alternatively
+    # if async_result.is_ok():
+    #     print("Fetched data:", await async_result.unwrap())
+    # else:
+    #     print("Error fetching data:", await async_result.unwrap_err())
+
+asyncio.run(fetch())

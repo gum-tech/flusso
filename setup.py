@@ -16,7 +16,7 @@ setup(
     license="MIT",
     keywords=['python', 'monad', 'rust', 'functional-programming', 'option', 'result'],
     extras_require={
-        "dev": ["pytest>=7.0", "twine>=4.0.2"],
+        "dev": ["pytest>=7.0", "pytest-asyncio", "twine>=4.0.2"], #pip install -e .[dev]
     },
     python_requires=">=3.7",
     include_package_data=True,
