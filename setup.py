@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="flusso",
-    version="0.0.1",
+    version="0.1.0",
     author="Tomiwa Adey",
     author_email="tomiwa@tomiwaadey.com",
     description="Rust Inspired Type-Safe Errors and Missing Values for Python.",

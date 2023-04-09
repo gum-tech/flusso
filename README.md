@@ -156,7 +156,7 @@ Option monad helps us safely handle missing values in a predictable and composab
         User(2, "Galileo Galilei", "gaga")
     ]
 
-    def get_user(id: int) -> 'Option[User]':
+    def get_user(id: int) -> Option[User]:
         user = next((user for user in users if user.id == id), Nothing)
         return Some(user)
 
@@ -195,13 +195,13 @@ Option monad helps us safely handle missing values in a predictable and composab
    from flusso.option import Option, Some, Nothing
 
     def get_full_name(first_name: str, middle_name: Option[str], last_name: str) -> str:
-    match(middle_name):
-        case Some(mname):
-            print(f"{first_name} {mname} {last_name}")
+        match(middle_name):
+            case Some(mname):
+                print(f"{first_name} {mname} {last_name}")
 
-        # Matches `Nothing` instance
-        case Nothing:
-            print(f"{first_name} {last_name}")
+            # Matches `Nothing` instance
+            case Nothing:
+                print(f"{first_name} {last_name}")
 
     get_full_name("Galileo", None, "Galilei"); # Galileo Galilei
     get_full_name("Leonardo", Some("Da"), "Vinci"); # Leonardo Da Vinci
@@ -643,7 +643,7 @@ Result example:
 ```
 Similarly, the Do notation can also be used with Result instances. It provides a clean, functional way to handle chained computations and potential errors.
 
-AsyncResult example
+AsyncResult example:
 ```python
     @async_result
     async def async_fetch_data(url: str) -> Dict[str, Any]:
@@ -677,6 +677,7 @@ By using the Do notation in Flusso, you can write more expressive and maintainab
 - [ ] Enhancing the Do notation to allow more fine-grained error handling or recovery, such as customizing the behavior for specific error cases or providing default values when certain errors occur.
 - [ ] Improving the error messages produced by the Do notation to provide more context and clarity when something goes wrong.
 - [ ] Custom data types: Provide an easy-to-use interface for creating custom data types that adhere to Flusso's functional programming principles and type safety requirements.
+
 [⬆️  Back to top](#toc)
 
 If you find this package useful, please click the star button ✨!
