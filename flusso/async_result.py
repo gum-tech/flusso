@@ -1,6 +1,7 @@
 import asyncio
+from contextlib import asynccontextmanager
 from functools import wraps
-from typing import Callable, Any, Awaitable, Generic, Union, Coroutine
+from typing import Callable, Any, AsyncIterable, Awaitable, Generic, Union, Coroutine, Dict
 from .result import Result, Ok, Err
 from .types import T, E, A
 
@@ -12,6 +13,47 @@ class AsyncResult(Generic[T, E]):
         :param result: A Result instance containing either a value or an error.
         """
         self._result = result
+
+    @classmethod
+    @asynccontextmanager
+    async def do(cls, **kwargs: Awaitable['AsyncResult[T, E]']) -> AsyncIterable['AsyncResult[Dict[str, T], E]']:
+        """
+        An asynchronous context manager for chaining async computations using do notation for AsyncResult.
+
+        This method allows you to pass multiple async functions that return AsyncResult objects as keyword
+        arguments. It will execute them sequentially, stopping at the first error encountered, if any.
+        The context manager will yield an AsyncResult containing either a dictionary of the successful results
+        or an error, depending on the outcome.
+
+        Usage example:
+
+        async with AsyncResult.do(
+            data=async_fetch_data(url)
+        ) as fetch_result:
+
+            match fetch_result._result:
+                case Ok(data):
+                    print("Fetched data:", data)
+                case Err(error):
+                    print("Error fetching data:", error)
+
+        :param kwargs: Asynchronous functions returning AsyncResult objects as keyword arguments.
+        :return: An asynchronous iterable yielding an AsyncResult containing either a dictionary
+                of the successful results or an error.
+        """
+        results = {}
+        try:
+            for name, coro in kwargs.items():
+                async_result = await coro
+                if async_result.is_err():
+                    yield cls(Err(await async_result.unwrap_err()))
+                    return
+                else:
+                    results[name] = await async_result.unwrap()
+            yield cls(Ok(results))
+        except Exception as e:
+            yield cls(Err(e))
+
 
     @staticmethod
     async def _call_and_await_if_needed(fn: Callable[..., Awaitable[A]], value: Union[T, E]) -> A:

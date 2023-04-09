@@ -4,7 +4,7 @@ from typing import Dict, Any
 import aiohttp
 from flusso.option import Option, Some, Nothing
 from flusso.result import Result, Ok, Err
-from flusso.async_result import async_result
+from flusso.async_result import async_result, AsyncResult
 
 # Examples from documentation
 # python run.py
@@ -186,3 +186,69 @@ async def fetch():
     #     print("Error fetching data:", await async_result.unwrap_err())
 
 asyncio.run(fetch())
+
+
+# Example VIII
+print("----Example VIII----")
+@async_result
+async def async_fetch_data(url: str) -> Dict[str, Any]:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                raise ValueError("Failed to fetch data")
+            return await response.json()
+
+async def fetch_do():
+    url = "https://jsonplaceholder.typicode.com/todos/1"
+
+    async with (
+        AsyncResult.do(fetch_data=async_fetch_data(url)) as fetch_result
+    ):
+
+        match fetch_result._result:
+            case Ok(data):
+                print("Fetched data:", data)
+            case Err(error):
+                print("Error fetching data:", error)
+
+asyncio.run(fetch_do())
+
+# Example IX
+print("----Example IX----")
+def add_numbers_result(a: int, b: int) -> Result[int, str]:
+    return Ok(a + b)
+
+def multiply_numbers_result(a: int, b: int) -> Result[int, str]:
+    return Ok(a * b)
+
+x = 2
+y = 3
+
+with (
+    Result.do(add_numbers_result(x, y)) as a,
+    Result.do(multiply_numbers_result(a, x)) as b,
+    Result.do(add_numbers_result(b, y)) as c,
+):
+    result = Ok(c)
+
+    print(result)
+
+# Example X
+print("----Example X----")
+def add_numbers_result(a: int, b: int) -> Result[int, str]:
+    return Ok(a + b)
+
+def multiply_numbers_result(a: int, b: int) -> Result[int, str]:
+    return Ok(a * b)
+
+x = 2
+y = 3
+
+with (
+    Result.do(add_numbers_result(x, y)) as a,
+    Result.do(multiply_numbers_result(a, x)) as b,
+    Result.do(add_numbers_result(b, y)) as c,
+):
+    result = Ok(c)
+
+    print(result)

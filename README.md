@@ -596,8 +596,10 @@ When using pattern matching with Flusso, you can match on Some, Nothing, Ok, and
   ```
 
 ### Do Notation
-Flusso provides a simple way to handle chained computations using the Do notation. The Do notation is a feature that simplifies complex operations with Option and Result instances. With Flusso's implementation of Do notation, you can easily manage multiple steps in a computation while maintaining clean, readable code.
-Here's how to use the Do notation for both Option and Result types in Flusso.
+Flusso provides a simple way to handle chained computations using the Do notation.
+The do notation offers a more intuitive and readable Imperative-style syntax for working with monadic types like Result, Option, and AsyncResult, allowing you to write sequential-like code while retaining the powerful error handling and encapsulation features of monads.
+With Flusso's implementation of Do notation, you can easily manage multiple steps in a computation while maintaining clean, readable code.
+Here's how to use the Do notation for Option, Result, and AsyncResult types in Flusso.
 
 Option example:
 ```python
@@ -641,14 +643,40 @@ Result example:
 ```
 Similarly, the Do notation can also be used with Result instances. It provides a clean, functional way to handle chained computations and potential errors.
 
-By using the Do notation in Flusso, you can write more expressive and maintainable code when working with Option and Result instances.
+AsyncResult example
+```python
+    @async_result
+    async def async_fetch_data(url: str) -> Dict[str, Any]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status != 200:
+                    raise ValueError("Failed to fetch data")
+                return await response.json()
+
+    async def fetch_do():
+        url = "https://jsonplaceholder.typicode.com/todos/1"
+
+        async with (
+            AsyncResult.do(fetch_data=async_fetch_data(url)) as fetch_result
+        ):
+
+            match fetch_result._result:
+                case Ok(data):
+                    print("Fetched data:", data)
+                case Err(error):
+                    print("Error fetching data:", error)
+
+    asyncio.run(fetch_do())
+```
+
+By using the Do notation in Flusso, you can write more expressive and maintainable code when working with Option, Result, and AsyncResult instances.
 
 ### Coming soon
-- Asynchronous support: Integrate seamless handling of asynchronous operations with Option and Result instances, making it even more convenient to work with coroutines.
-- Comprehensive documentation and examples: Expand the library's documentation and provide more practical examples to help users get the most out of Flusso.
-- Enhancing the Do notation to allow more fine-grained error handling or recovery, such as customizing the behavior for specific error cases or providing default values when certain errors occur.
-- Improving the error messages produced by the Do notation to provide more context and clarity when something goes wrong.
-- Custom data types: Provide an easy-to-use interface for creating custom data types that adhere to Flusso's functional programming principles and type safety requirements.
+- [x] Asynchronous support: Integrate seamless handling of asynchronous operations with Result instances, making it even more convenient to work with coroutines.
+- [ ] Comprehensive documentation and examples: Expand the library's documentation and provide more practical examples to help users get the most out of Flusso.
+- [ ] Enhancing the Do notation to allow more fine-grained error handling or recovery, such as customizing the behavior for specific error cases or providing default values when certain errors occur.
+- [ ] Improving the error messages produced by the Do notation to provide more context and clarity when something goes wrong.
+- [ ] Custom data types: Provide an easy-to-use interface for creating custom data types that adhere to Flusso's functional programming principles and type safety requirements.
 [⬆️  Back to top](#toc)
 
 If you find this package useful, please click the star button ✨!
