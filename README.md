@@ -112,10 +112,10 @@ Option monad helps us safely handle missing values in a predictable and composab
             self.fullname = fullname
             self.username = username
 
-        users = [
-            User(1, "Leonardo Da Vinci", "leo"),
-            User(2, "Galileo Galilei", "gaga")
-        ]
+    users = [
+        User(1, "Leonardo Da Vinci", "leo"),
+        User(2, "Galileo Galilei", "gaga")
+    ]
 
     def get_user(id: int) -> Union[User, None]:
         return next((user for user in users if user.id == id), None)
